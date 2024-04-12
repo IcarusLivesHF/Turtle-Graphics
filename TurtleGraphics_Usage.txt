@@ -1,0 +1,26 @@
+turtle attibutes:
+    dfx = x position
+    dfy = y position
+    dfa = direction
+
+turtle actions:
+    HSLtoRGB  H S L
+    color R G B
+    forward   distance
+    backward  distance
+    left      angle (0-360)
+    right     angle (0-360)
+    circle    size
+    setx      goto x position
+    sety      goto y position
+    seta      set turtle angle
+    goto      goto x,y position
+    define    define x y angle
+    stamp     stamps ID number on screen, increases every use.
+    push      no arguments - save position
+    pop       no arguments - return to saved position
+    home      no arguments - send turtle to 0,0
+    center    no arguments - send turtle to center screen
+    penDown   no arguments - begin drawing
+    penUp     no arguments - stop drawing
+    clear     no arguments - clear screen
