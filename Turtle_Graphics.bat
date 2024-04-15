@@ -1,8 +1,6 @@
 @echo off & setlocal enableDelayedExpansion
-set /a "wid=200, hei=150"
-mode %wid%,%hei%
 
-call :turtleGraphics
+call :turtleGraphics turtle 200 150
 
 %turtle.define% wid/2 hei/2-30 0
 %turtle.penDown%
@@ -28,6 +26,14 @@ pause >nul & exit /b
 
 
 :turtleGraphics
+if "%~3" neq "" (
+	set /a "wid=%~2, hei=%~3"
+) else (
+	set /a "wid=80, hei=60"
+)
+mode %wid%,%hei%
+
+
 (for /f %%a in ('echo prompt $E^| cmd') do set "\e=%%a" )
 <nul set /p "=%\e%[?25l"
 
@@ -35,62 +41,79 @@ pause >nul & exit /b
 %= This creates an escaped Line Feed - DO NOT ALTER =%
 )
 
+call :lineMacro
+
 set "sin=(a=((x*31416/180)%%62832)+(((x*31416/180)%%62832)>>31&62832), b=(a-15708^a-47124)>>31,a=(-a&b)+(a&~b)+(31416&b)+(-62832&(47123-a>>31)),a-a*a/1875*a/320000+a*a/1875*a/15625*a/16000*a/2560000-a*a/1875*a/15360*a/15625*a/15625*a/16000*a/44800000) / 10000"
 set "cos=(a=((15708-x*31416/180)%%62832)+(((15708-x*31416/180)%%62832)>>31&62832), b=(a-15708^a-47124)>>31,a=(-a&b)+(a&~b)+(31416&b)+(-62832&(47123-a>>31)),a-a*a/1875*a/320000+a*a/1875*a/15625*a/16000*a/2560000-a*a/1875*a/15360*a/15625*a/15625*a/16000*a/44800000) / 10000"
-set /a "DFX=wid / 2", "DFY=hei / 2", "DFA=0", "turtle.R=255","turtle.G=255","turtle.B=255", "push=0"
+set /a "DFX=wid / 2", "DFY=hei / 2", "DFA=0", "tdfx=dfx", "tdfy=dfy", "turtle.R=255","turtle.G=255","turtle.B=255"
 set "penDown=false"
+set "saved="
 set "turtleGraphics=%\e%[38;2;!turtle.R!;!turtle.G!;!turtle.B!m"
 
-set turtle.forward=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1" %%1 in ("^!args^!") do (%\n%
-	set /a "DFX+=(%%~1+1)*^!cos:x=DFA^!", "DFY+=(%%~1+1)*^!sin:x=DFA^!"%\n%
+if "%~1" neq "" ( set "prefix=%~1" ) else ( set "prefix=turtle" )
+
+set %prefix%.forward=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1,2" %%1 in ("^!args^!") do (%\n%
+	set /a "tDFX=(1+%%~1) * ^!cos:x=DFA^! + dfx", "tDFY=(1+%%~1) * ^!sin:x=DFA^! + dfy"%\n%
 	if /i "^!penDown^!" equ "true" (%\n%
-		^<nul set /p "turtleGraphics=^!turtleGraphics^!%\e%[^!dfy^!;^!dfx^!HÛ"%\n%
+		^!line^! ^^!dfx^^! ^^!dfy^^! ^^!tdfx^^! ^^!tdfy^^!%\n%
+		^<nul set /p "turtleGraphics=^!turtleGraphics^!^!$line^!"%\n%
 	)%\n%
+	set /a "dfx=tdfx", "dfy=tdfy"%\n%
 )) else set args=
 
-set turtle.backward=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1" %%1 in ("^!args^!") do (%\n%
-	set /a "DFX-=(%%~1+1)*^!cos:x=DFA^!", "DFY-=(%%~1+1)*^!sin:x=DFA^!"%\n%
+set %prefix%.backward=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1,2" %%1 in ("^!args^!") do (%\n%
+	set /a "tDFX=(1-%%~1) * ^!cos:x=DFA^! + dfx", "tDFY=(1-%%~1) * ^!sin:x=DFA^! + dfy"%\n%
 	if /i "^!penDown^!" equ "true" (%\n%
-		^<nul set /p "turtleGraphics=^!turtleGraphics^!%\e%[^!dfy^!;^!dfx^!HÛ"%\n%
+		^!line^! ^^!dfx^^! ^^!dfy^^! ^^!tdfx^^! ^^!tdfy^^!%\n%
+		^<nul set /p "turtleGraphics=^!turtleGraphics^!^!$line^!"%\n%
 	)%\n%
+	set /a "dfx=tdfx", "dfy=tdfy"%\n%
 )) else set args=
 
-set turtle.left=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1" %%1 in ("^!args^!") do (%\n%
-	set /a "DFA-=%%~1"%\n%
+set %prefix%.left=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1" %%1 in ("^!args^!") do (%\n%
+	set /a "DFA=(dfa - %%~1) %% 360"%\n%
 )) else set args=
 
-set turtle.right=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1" %%1 in ("^!args^!") do (%\n%
-	set /a "DFA+=%%~1"%\n%
+set %prefix%.right=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1" %%1 in ("^!args^!") do (%\n%
+	set /a "DFA=(dfa + %%~1) %% 360"%\n%
 )) else set args=
 
-set turtle.setx=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1" %%1 in ("^!args^!") do (%\n%
+set %prefix%.setx=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1" %%1 in ("^!args^!") do (%\n%
 	set /a "dfx=%%~1"%\n%
+	if ^^!dfx^^! lss 0 ( set "dfx=0" ) else if ^^!dfx^^! gtr %wid% set /a "dfx=wid"%\n%
 )) else set args=
 
-set turtle.sety=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1" %%1 in ("^!args^!") do (%\n%
+set %prefix%.sety=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1" %%1 in ("^!args^!") do (%\n%
 	set /a "dfy=%%~1"%\n%
+	if ^^!dfy^^! lss 0 ( set "dfy=0" ) else if ^^!dfy^^! gtr %hei% set /a "dfy=hei"%\n%
 )) else set args=
 
-set turtle.seta=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1" %%1 in ("^!args^!") do (%\n%
-	set /a "dfa=%%~1"%\n%
+set %prefix%.seta=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1" %%1 in ("^!args^!") do (%\n%
+	set /a "dfa=%%~1 %% 360"%\n%
 )) else set args=
 
-set turtle.goto=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1,2" %%1 in ("^!args^!") do (%\n%
+set %prefix%.goto=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1,2" %%1 in ("^!args^!") do (%\n%
 	set /a "dfx=%%~1", "dfy=%%~2"%\n%
+	if ^^!dfx^^! lss 0 ( set "dfx=0" ) else if ^^!dfx^^! gtr %wid% set /a "dfx=wid"%\n%
+	if ^^!dfy^^! lss 0 ( set "dfy=0" ) else if ^^!dfy^^! gtr %hei% set /a "dfy=hei"%\n%
 )) else set args=
 
-set turtle.define=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1-3" %%1 in ("^!args^!") do (%\n%
-	set /a "dfx=%%~1", "dfy=%%~2", "dfa=%%~3"%\n%
+set %prefix%.define=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1-3" %%1 in ("^!args^!") do (%\n%
+	set /a "dfx=%%~1", "dfy=%%~2", "dfa=%%~3 %% 360"%\n%
+	if ^^!dfx^^! lss 0 ( set "dfx=0" ) else if ^^!dfx^^! gtr %wid% set /a "dfx=wid"%\n%
+	if ^^!dfy^^! lss 0 ( set "dfy=0" ) else if ^^!dfy^^! gtr %hei% set /a "dfy=hei"%\n%
 )) else set args=
 
-set turtle.circle=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1" %%1 in ("^!args^!") do (%\n%
-	for /l %%i in (0,3,360) do (%\n%
+set %prefix%.circle=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1" %%1 in ("^!args^!") do (%\n%
+	for /l %%i in (0,6,360) do (%\n%
 		set /a "cx=%%~1 * ^!cos:x=%%i^! + dfx", "cy=%%~1 * ^!sin:x=%%i^! + dfy"%\n%
-		^<nul set /p "turtleGraphics=^!turtleGraphics^!%\e%[^!cy^!;^!cx^!HÛ"%\n%
+		if ^^!cx^^! gtr 0 if ^^!cx^^! lss %wid% if ^^!cy^^! gtr 0 if ^^!cy^^! lss %hei% (%\n%
+			^<nul set /p "turtleGraphics=^!turtleGraphics^!%\e%[^!cy^!;^!cx^!HÃ›"%\n%
+		)%\n%
 	)%\n%
 )) else set args=
 
-set turtle.color=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1-3" %%1 in ("^!args^!") do (%\n%
+set %prefix%.color=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1-3" %%1 in ("^!args^!") do (%\n%
 	if "%%~1" neq "" ( set "turtle.R=%%~1"%\n%
 	if "%%~2" neq "" ( set "turtle.G=%%~2"%\n%
 	if "%%~3" neq "" ( set "turtle.B=%%~3" )))%\n%
@@ -98,17 +121,53 @@ set turtle.color=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1-3" %%1 in ("^!
 )) else set args=
 
 set "HSL(n)=k=(n*100+(%%1 %% 3600)/3) %% 1200, x=k-300, y=900-k, x=y-((y-x)&((x-y)>>31)), x=100-((100-x)&((x-100)>>31)), max=x-((x+100)&((x+100)>>31))"
-set turtle.HSLtoRGB=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1-3" %%1 in ("^!args^!") do (%\n%
+set %prefix%.HSLtoRGB=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1-3" %%1 in ("^!args^!") do (%\n%
 	set /a "%HSL(n):n=0%", "r=(%%3-(%%2*((10000-%%3)-(((10000-%%3)-%%3)&((%%3-(10000-%%3))>>31)))/10000)*max/100)*255/10000","%HSL(n):n=8%", "g=(%%3-(%%2*((10000-%%3)-(((10000-%%3)-%%3)&((%%3-(10000-%%3))>>31)))/10000)*max/100)*255/10000", "%HSL(n):n=4%", "b=(%%3-(%%2*((10000-%%3)-(((10000-%%3)-%%3)&((%%3-(10000-%%3))>>31)))/10000)*max/100)*255/10000"%\n%
 )) else set args=
 set "hsl(n)="
 
-set turtle.stamp=set /a "stamp+=1" ^& ^<nul set /p "turtleGraphics=^!turtleGraphics^!%\e%[^!dfy^!;^!dfx^!H^!stamp^!"
-set turtle.push=(set /a "push+=1" ^& for %%p in (^^!push^^!) do (set /a "sX[%%p]=DFX, sY[%%p]=DFY, sA[%%p]=DFA"))
-set turtle.pop=(for %%p in (^^!push^^!) do (set /a "DFX=sX[%%p], DFY=sY[%%p], DFA=sA[%%p]") ^& set /a "push-=1")
-set turtle.home=set /a "DFX=0, DFY=0, DFA=0"
-set turtle.center=set /a "DFX=wid/2, DFY=hei/2, DFA=0"
-set "turtle.penDown=set penDown=true"
-set "turtle.penUp=set penDown=false"
-set "turtle.clear=cls & set turtleGraphics="
+set %prefix%.dot=(%\n%
+	if ^^!dfx^^! gtr 0 if ^^!dfx^^! lss %wid% if ^^!dfy^^! gtr 0 if ^^!dfy^^! lss %hei% (%\n%
+		set /a "stamp+=1" ^& ^<nul set /p "turtleGraphics=^!turtleGraphics^!%\e%[^!dfy^!;^!dfx^!HÃ›"%\n%
+))
+
+set %prefix%.stamp=(%\n%
+	if ^^!dfx^^! gtr 0 if ^^!dfx^^! lss %wid% if ^^!dfy^^! gtr 0 if ^^!dfy^^! lss %hei% (%\n%
+		^<nul set /p "turtleGraphics=^!turtleGraphics^!%\e%[^!dfy^!;^!dfx^!H^!dfa^!"%\n%
+))
+
+set %prefix%.push=(set "saved=^!tdfx^!,^!tdfy^!,^!DFX^!,^!DFY^!,^!DFA^! ^!saved^!")
+set %prefix%.pop=(for /f "tokens=1-5 delims=, " %%v in ("^!saved^!") do (set /a "tdfx=%%v","tdfy=%%w","DFX=%%x, DFY=%%y, DFA=%%z") ^& set "saved=^!saved:* =^!")
+set %prefix%.home=set /a "DFX=0, DFY=0, DFA=0"
+set %prefix%.center=set /a "DFX=wid/2, DFY=hei/2, DFA=0"
+set "%prefix%.penDown=set penDown=true"
+set "%prefix%.penUp=set penDown=false"
+set "%prefix%.clear=cls & set turtleGraphics="
+goto :eof
+
+:lineMacro
+rem line x0 y0 x1 y1 color
+set line=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1-5" %%1 in ("^!args^!") do (%\n%
+	set "$line=[38;2;^!turtle.R^!;^!turtle.G^!;^!turtle.B^!m"%\n%
+	set /a "xa=%%~1", "ya=%%~2", "xb=%%~3", "yb=%%~4", "dx=%%~3 - %%~1", "dy=%%~4 - %%~2"%\n%
+	if ^^!dy^^! lss 0 ( set /a "dy=-dy", "stepy=-1" ) else ( set "stepy=1" )%\n%
+	if ^^!dx^^! lss 0 ( set /a "dx=-dx", "stepx=-1" ) else ( set "stepx=1" )%\n%
+	set /a "dx<<=1", "dy<<=1"%\n%
+	if ^^!dx^^! gtr ^^!dy^^! (%\n%
+		set /a "fraction=dy - (dx >> 1)"%\n%
+		for /l %%x in (^^!xa^^!,^^!stepx^^!,^^!xb^^!) do (%\n%
+			if ^^!fraction^^! geq 0 set /a "ya+=stepy", "fraction-=dx"%\n%
+			set /a "fraction+=dy"%\n%
+			set "$line=^!$line^![^!ya^!;%%xHÃ›"%\n%
+		)%\n%
+	) else (%\n%
+		set /a "fraction=dx - (dy >> 1)"%\n%
+		for /l %%y in (^^!ya^^!,^^!stepy^^!,^^!yb^^!) do (%\n%
+			if ^^!fraction^^! geq 0 set /a "xa+=stepx", "fraction-=dy"%\n%
+			set /a "fraction+=dx"%\n%
+			set "$line=^!$line^![%%y;^!xa^!HÃ›"%\n%
+		)%\n%
+	)%\n%
+	set "$line=^!$line^![0m"%\n%
+)) else set args=
 goto :eof
