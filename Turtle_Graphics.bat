@@ -105,7 +105,7 @@ set %prefix%.define=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1-3" %%1 in (
 )) else set args=
 
 set %prefix%.circle=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1" %%1 in ("^!args^!") do (%\n%
-	for /l %%i in (0,6,360) do (%\n%
+	for /l %%i in (0,3,360) do (%\n%
 		set /a "cx=%%~1 * ^!cos:x=%%i^! + dfx", "cy=%%~1 * ^!sin:x=%%i^! + dfy"%\n%
 		if ^^!cx^^! gtr 0 if ^^!cx^^! lss %wid% if ^^!cy^^! gtr 0 if ^^!cy^^! lss %hei% (%\n%
 			^<nul set /p "turtleGraphics=^!turtleGraphics^!%\e%[^!cy^!;^!cx^!HÛ"%\n%
