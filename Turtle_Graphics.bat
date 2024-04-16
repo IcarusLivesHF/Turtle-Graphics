@@ -6,12 +6,9 @@ call :turtleGraphics t
 %t.screenSize% 200 150
 %t.penDown%
 
-set "size=2"
-set "cs=5"
+rem YOUR CODE GOES HERE ----------------------
 
-
-set "legs=7"
-set /a "degs=360 / legs"
+set /a "size=2", "cs=5", "legs=7", "degs=360 / legs"
 
 	for /l %%j in (0,100,3000) do (
 		%t.HSLtoRGB% %%j 10000 5000
@@ -27,9 +24,8 @@ set /a "degs=360 / legs"
 
 		set /a "cs+=1"
 		set /a "size+=3"
-		
 	)
-	
+rem ------------------------------------------
 
 %t.penUp%
 
