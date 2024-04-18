@@ -8,22 +8,19 @@ call :turtleGraphics t
 
 rem YOUR CODE GOES HERE ----------------------
 
-set /a "size=2", "cs=5", "legs=7", "degs=360 / legs"
+set /a "size=0", "legs=7", "degs=360 / legs"
 
 	for /l %%j in (0,100,3000) do (
 		%t.HSLtoRGB% %%j 10000 5000
 		
-		set /a "j=(j + legs) %% 360"
+		set /a "j=(j + legs) %% 360", "size+=3"
 		
 		for /l %%i in (1,1,%legs%) do (
 			
 			set /a "cx%%i=size * !cos:x=(j+degs*%%i)! + wid / 2", "cy%%i=size * !sin:x=(j+degs*%%i)! + hei / 2"
-			%t.define% !cx%%i! !cy%%i! j+degs*%%i
+			%t.define% !cx! !cy! j+degs*%%i
 			%t.forward% 10
 		)
-
-		set /a "cs+=1"
-		set /a "size+=3"
 	)
 rem ------------------------------------------
 
