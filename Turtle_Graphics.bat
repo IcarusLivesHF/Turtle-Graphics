@@ -2,30 +2,31 @@
 
 call :turtleGraphics t
 
+
 %t.screenSize% 200 150
-%t.center%
 %t.penDown%
 
-set "size=1"
-set "legs=7"
-set /a "degs=360 / legs"
+rem YOUR CODE GOES HERE ----------------------
 
-for /l %%j in (0,10,300) do (
-	
-	%t.HSLtoRGB% %%j*10 10000 5000
-	
-	set /a "j=(j + legs) %% 360", "size+=3"
-	
-	for /l %%i in (1,1,%legs%) do (
-		set /a "cx=size * !cos:x=degs*%%i+30-j! + wid / 2", "cy=size * !sin:x=(size*2 + degs*%%i + %%i*10)! + hei / 2"
+set /a "size=0", "legs=7", "degs=360 / legs"
+
+	for /l %%j in (0,100,3000) do (
+		%t.HSLtoRGB% %%j 10000 5000
 		
-		%t.define% !cx! !cy! (j+degs*%%i^)
-		%t.dot%
+		set /a "j=(j + legs) %% 360", "size+=3"
+		
+		for /l %%i in (1,1,%legs%) do (
+			
+			set /a "cx=size * !cos:x=(j+degs*%%i)! + wid / 2", "cy=size * !sin:x=(j+degs*%%i)! + hei / 2"
+			%t.define% !cx! !cy! j+degs*%%i
+			%t.forward% 10
+		)
 	)
-)
+rem ------------------------------------------
 
-rem to stop draw
 %t.penUp%
+
+echo=%turtleGraphics%
 pause >nul & exit /b
 
 
@@ -33,18 +34,36 @@ pause >nul & exit /b
 
 
 
-
-
-
-
-
-
-
-
-
-
 :turtleGraphics
-call :turtle.init
+(for /f %%a in ('echo prompt $E^| cmd') do set "\e=%%a" )
+<nul set /p "=%\e%[?25l"
+
+(set \n=^^^
+%= This creates an escaped Line Feed - DO NOT ALTER =%
+)
+
+rem bresenhams line algorithm. Used to draw lines moving "forward"
+call :lineMacro
+
+set "mirrored=y - x"
+set "sin=(a=((x*31416/180)%%62832)+(((x*31416/180)%%62832)>>31&62832), b=(a-15708^a-47124)>>31,a=(-a&b)+(a&~b)+(31416&b)+(-62832&(47123-a>>31)),a-a*a/1875*a/320000+a*a/1875*a/15625*a/16000*a/2560000-a*a/1875*a/15360*a/15625*a/15625*a/16000*a/44800000) / 10000"
+set "cos=(a=((15708-x*31416/180)%%62832)+(((15708-x*31416/180)%%62832)>>31&62832), b=(a-15708^a-47124)>>31,a=(-a&b)+(a&~b)+(31416&b)+(-62832&(47123-a>>31)),a-a*a/1875*a/320000+a*a/1875*a/15625*a/16000*a/2560000-a*a/1875*a/15360*a/15625*a/15625*a/16000*a/44800000) / 10000"
+
+set /a "DFX=wid / 2",^
+       "DFY=hei / 2",^
+	   "DFA=0",^
+	   "turtle.R=255",^
+	   "turtle.G=255",^
+	   "turtle.B=255"
+set "penDown=false"
+set "saved="
+set "turtleGraphics="
+
+rem grab default size of screen - WID, WIDTH, HEI, HEIGHT
+for /f "tokens=2 delims=: " %%i in ('mode') do ( 2>nul set /a "0/%%i" && ( 
+	if defined hei (set /a "wid=width=%%i") else (set /a "hei=height=%%i")
+))
+mode %wid%,%hei%
 
 rem name your turtle/macros
 if "%~1" neq "" ( set "prefix=%~1" ) else ( set "prefix=turtle" )
@@ -54,13 +73,11 @@ rem %turtle.forward% 10
 set %prefix%.forward=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1,2" %%1 in ("^!args^!") do (%\n%
 	set /a "tDFX=(1+%%~1) * ^!cos:x=DFA^! + dfx", "tDFY=(1+%%~1) * ^!sin:x=DFA^! + dfy"%\n%
 	if /i "^!penDown^!" equ "true" (%\n%
-		if ^^!dfx^^! gtr 1 if ^^!dfx^^! lss ^^!wid^^! (%\n%
-			if ^^!dfy^^! gtr 1 if ^^!dfy^^! lss ^^!hei^^! (%\n%
-				if ^^!tdfx^^! gtr 1 if ^^!tdfx^^! lss ^^!wid^^! (%\n%
-					if ^^!tdfy^^! gtr 1 if ^^!tdfy^^! lss ^^!hei^^! (%\n%
+		if ^^!dfx^^! gtr 1 if ^^!dfx^^! lss ^^!wid^^! if ^^!dfy^^! gtr 1 if ^^!dfy^^! lss ^^!hei^^! (%\n%
+		if ^^!tdfx^^! gtr 1 if ^^!tdfx^^! lss ^^!wid^^! if ^^!tdfy^^! gtr 1 if ^^!tdfy^^! lss ^^!hei^^! (%\n%
 		^!line^! ^^!dfx^^! ^^!dfy^^! ^^!tdfx^^! ^^!tdfy^^!%\n%
 		^<nul set /p "turtleGraphics=^!turtleGraphics^!^!$line^!"%\n%
-	)))))%\n%
+	)))%\n%
 	set /a "dfx=tdfx", "dfy=tdfy"%\n%
 )) else set args=
 
@@ -68,10 +85,12 @@ set %prefix%.forward=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1,2" %%1 in 
 rem %turtle.backward% 10
 set %prefix%.backward=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1,2" %%1 in ("^!args^!") do (%\n%
 	set /a "tDFX=(1-%%~1) * ^!cos:x=DFA^! + dfx", "tDFY=(1-%%~1) * ^!sin:x=DFA^! + dfy"%\n%
-	if /i "^!penDown^!" equ "true" if ^^!dfx^^! gtr 1 if ^^!dfx^^! lss ^^!wid^^! if ^^!dfy^^! gtr 1 if ^^!dfy^^! lss ^^!hei^^! if ^^!tdfx^^! gtr 1 if ^^!tdfx^^! lss ^^!wid^^! if ^^!tdfy^^! gtr 1 if ^^!tdfy^^! lss ^^!hei^^! (%\n%
+	if /i "^!penDown^!" equ "true" (%\n%
+		if ^^!dfx^^! gtr 1 if ^^!dfx^^! lss ^^!wid^^! if ^^!dfy^^! gtr 1 if ^^!dfy^^! lss ^^!hei^^! (%\n%
+		if ^^!tdfx^^! gtr 1 if ^^!tdfx^^! lss ^^!wid^^! if ^^!tdfy^^! gtr 1 if ^^!tdfy^^! lss ^^!hei^^! (%\n%
 		^!line^! ^^!dfx^^! ^^!dfy^^! ^^!tdfx^^! ^^!tdfy^^!%\n%
 		^<nul set /p "turtleGraphics=^!turtleGraphics^!^!$line^!"%\n%
-	)%\n%
+	)))%\n%
 	set /a "dfx=tdfx", "dfy=tdfy"%\n%
 )) else set args=
 
@@ -110,10 +129,11 @@ set %prefix%.setHeading=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1" %%1 in
 :_turtle.goto
 rem %turtle.goto% x y - will draw line to location
 set %prefix%.goto=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1,2" %%1 in ("^!args^!") do (%\n%
-	if ^^!dfx^^! gtr 0 if ^^!dfx^^! lss ^^!wid^^! if ^^!dfy^^! gtr 0 if ^^!dfy^^! lss ^^!hei^^! if %%~1 gtr 0 if %%~1 lss ^^!wid^^! if %%~2 gtr 0 if %%~2 lss ^^!hei^^! (%\n%
-		^!line^! ^^!dfx^^! ^^!dfy^^! %%~1 %%~2%\n%
-		^<nul set /p "turtleGraphics=^!turtleGraphics^!^!$line^!"%\n%
-	)%\n%
+	if ^^!dfx^^! gtr 1 if ^^!dfx^^! lss ^^!wid^^! if ^^!dfy^^! gtr 1 if ^^!dfy^^! lss ^^!hei^^! (%\n%
+		if %%~1 gtr 1 if %%~1 lss ^^!wid^^! if %%~2 gtr 1 if %%~2 lss ^^!hei^^! (%\n%
+			^!line^! ^^!dfx^^! ^^!dfy^^! %%~1 %%~2%\n%
+			^<nul set /p "turtleGraphics=^!turtleGraphics^!^!$line^!"%\n%
+	))%\n%
 	set /a "dfx=%%~1", "dfy=%%~2"%\n%
 )) else set args=
 
@@ -148,9 +168,9 @@ set %prefix%.circle=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1,2" %%1 in (
 :_turtle.color
 rem %turtle.color% R G B - set turtle color
 set %prefix%.color=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1-3" %%1 in ("^!args^!") do (%\n%
-	if "%%~1" neq "" set "turtle.R=%%~1"%\n%
-	if "%%~2" neq "" set "turtle.G=%%~2"%\n%
-	if "%%~3" neq "" set "turtle.B=%%~3"%\n%
+	if "%%~1" neq "" ( set "turtle.R=%%~1"%\n%
+	if "%%~2" neq "" ( set "turtle.G=%%~2"%\n%
+	if "%%~3" neq "" ( set "turtle.B=%%~3" )))%\n%
 	set "turtleGraphics=^!turtleGraphics^!%\e%[38;2;^!turtle.R^!;^!turtle.G^!;^!turtle.B^!m"%\n%
 )) else set args=
 
@@ -164,15 +184,17 @@ set "hsl(n)="
 
 :_turtle.stamp
 rem %turtle.stamp% - stamp screen with stamp.id
-set %prefix%.stamp=if ^^!dfx^^! gtr 0 if ^^!dfx^^! lss ^^!wid^^! if ^^!dfy^^! gtr 0 if ^^!dfy^^! lss ^^!hei^^! (%\n%
-	set /a "stamp+=1" ^& ^<nul set /p "turtleGraphics=^!turtleGraphics^%\e%[38;2;^!turtle.R^!;^!turtle.G^!;^!turtle.B^!m!%\e%[^!dfy^!;^!dfx^!H^!stamp^!"%\n%
-)
+set %prefix%.stamp=(%\n%
+	if ^^!dfx^^! gtr 0 if ^^!dfx^^! lss ^^!wid^^! if ^^!dfy^^! gtr 0 if ^^!dfy^^! lss ^^!hei^^! (%\n%
+		set /a "stamp+=1" ^& ^<nul set /p "turtleGraphics=^!turtleGraphics^%\e%[38;2;^!turtle.R^!;^!turtle.G^!;^!turtle.B^!m!%\e%[^!dfy^!;^!dfx^!H^!stamp^!"%\n%
+))
 
 :_turtle.dot
 rem %turtle.dot% - stamp screen with dot
-set %prefix%.dot=if ^^!dfx^^! gtr 0 if ^^!dfx^^! lss ^^!wid^^! if ^^!dfy^^! gtr 0 if ^^!dfy^^! lss ^^!hei^^! (%\n%
-	^<nul set /p "turtleGraphics=^!turtleGraphics^!%\e%[38;2;^!turtle.R^!;^!turtle.G^!;^!turtle.B^!m%\e%[^!dfy^!;^!dfx^!HÛ"%\n%
-)
+set %prefix%.dot=(%\n%
+	if ^^!dfx^^! gtr 0 if ^^!dfx^^! lss ^^!wid^^! if ^^!dfy^^! gtr 0 if ^^!dfy^^! lss ^^!hei^^! (%\n%
+		^<nul set /p "turtleGraphics=^!turtleGraphics^!%\e%[48;2;^!turtle.R^!;^!turtle.G^!;^!turtle.B^!m%\e%[^!dfy^!;^!dfx^!H "%\n%
+))
 
 :_turtle.screenSize
 REM %turtle.screenSize% wid hei - set screen size
@@ -211,41 +233,15 @@ set "%prefix%.penUp=set penDown=false"
 REM %turtle.clearScreen% - clear screen
 set "%prefix%.clearScreen=cls & set turtleGraphics="
 
+
+
+
 goto :eof
 :_______________________
-
-:turtle.init
-(for /f %%a in ('echo prompt $E^| cmd') do set "\e=%%a" )
-<nul set /p "=%\e%[?25l"
-
-(set \n=^^^
-%= This creates an escaped Line Feed - DO NOT ALTER =%
-)
-
-set "mirrored=y - x"
-set "sin=(a=((x*31416/180)%%62832)+(((x*31416/180)%%62832)>>31&62832), b=(a-15708^a-47124)>>31,a=(-a&b)+(a&~b)+(31416&b)+(-62832&(47123-a>>31)),a-a*a/1875*a/320000+a*a/1875*a/15625*a/16000*a/2560000-a*a/1875*a/15360*a/15625*a/15625*a/16000*a/44800000) / 10000"
-set "cos=(a=((15708-x*31416/180)%%62832)+(((15708-x*31416/180)%%62832)>>31&62832), b=(a-15708^a-47124)>>31,a=(-a&b)+(a&~b)+(31416&b)+(-62832&(47123-a>>31)),a-a*a/1875*a/320000+a*a/1875*a/15625*a/16000*a/2560000-a*a/1875*a/15360*a/15625*a/15625*a/16000*a/44800000) / 10000"
-
-set /a "DFX=wid / 2",^
-       "DFY=hei / 2",^
-	   "DFA=0",^
-	   "turtle.R=255",^
-	   "turtle.G=255",^
-	   "turtle.B=255"
-set "penDown=false"
-set "saved="
-set "turtleGraphics="
-
-rem grab default size of screen - WID, WIDTH, HEI, HEIGHT
-for /f "tokens=2 delims=: " %%i in ('mode') do ( 2>nul set /a "0/%%i" && ( 
-	if defined hei (set /a "wid=width=%%i") else (set /a "hei=height=%%i")
-))
-mode %wid%,%hei%
-
-rem bresenhams line algorithm. Used to draw lines moving "forward"
+:lineMacro
 rem line x0 y0 x1 y1 color
 set line=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1-5" %%1 in ("^!args^!") do (%\n%
-	set "$line=[38;2;^!turtle.R^!;^!turtle.G^!;^!turtle.B^!m"%\n%
+	set "$line=[48;2;^!turtle.R^!;^!turtle.G^!;^!turtle.B^!m"%\n%
 	set /a "xa=%%~1", "ya=%%~2", "xb=%%~3", "yb=%%~4", "dx=%%~3 - %%~1", "dy=%%~4 - %%~2"%\n%
 	if ^^!dy^^! lss 0 ( set /a "dy=-dy", "stepy=-1" ) else ( set "stepy=1" )%\n%
 	if ^^!dx^^! lss 0 ( set /a "dx=-dx", "stepx=-1" ) else ( set "stepx=1" )%\n%
@@ -255,14 +251,14 @@ set line=for %%# in (1 2) do if %%#==2 ( for /f "tokens=1-5" %%1 in ("^!args^!")
 		for /l %%x in (^^!xa^^!,^^!stepx^^!,^^!xb^^!) do (%\n%
 			if ^^!fraction^^! geq 0 set /a "ya+=stepy", "fraction-=dx"%\n%
 			set /a "fraction+=dy"%\n%
-			set "$line=^!$line^![^!ya^!;%%xHÛ"%\n%
+			set "$line=^!$line^![^!ya^!;%%xH "%\n%
 		)%\n%
 	) else (%\n%
 		set /a "fraction=dx - (dy >> 1)"%\n%
 		for /l %%y in (^^!ya^^!,^^!stepy^^!,^^!yb^^!) do (%\n%
 			if ^^!fraction^^! geq 0 set /a "xa+=stepx", "fraction-=dy"%\n%
 			set /a "fraction+=dx"%\n%
-			set "$line=^!$line^![%%y;^!xa^!HÛ"%\n%
+			set "$line=^!$line^![%%y;^!xa^!H "%\n%
 		)%\n%
 	)%\n%
 	set "$line=^!$line^![0m"%\n%
