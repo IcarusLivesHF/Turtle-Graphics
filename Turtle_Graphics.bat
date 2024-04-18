@@ -17,8 +17,7 @@ for /l %%j in (0,10,300) do (
 	set /a "j=(j + legs) %% 360", "size+=3"
 	
 	for /l %%i in (1,1,%legs%) do (
-		set /a "cx=size * !cos:x=degs*%%i+30-j! + wid / 2", ^
-		       "cy=size * !sin:x=(size*2 + degs*%%i + %%i*10)! + hei / 2"
+		set /a "cx=size * !cos:x=degs*%%i+30-j! + wid / 2", "cy=size * !sin:x=(size*2 + degs*%%i + %%i*10)! + hei / 2"
 		
 		%t.define% !cx! !cy! (j+degs*%%i^)
 		%t.dot%
