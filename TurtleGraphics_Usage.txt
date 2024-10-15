@@ -5,7 +5,7 @@ turtle attibutes:
 
 turtle actions:
     HSLtoRGB  H S L
-    color R G B
+    color     R G B
     forward   distance
     backward  distance
     left      angle (0-360)
